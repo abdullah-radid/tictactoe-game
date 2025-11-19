@@ -1,18 +1,44 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 
 
 public class Server {
     
     private ServerSocket myServerSocket;
+    private GameManager myGame;
+    private HashMap<Thread, String> gameLobby;
 
     public Server(ServerSocket myServerSocket) {
         this.myServerSocket = myServerSocket;
     }
 
+
+    public void startGame() {
+        String[][] board = {{"_", "_", "_"}, 
+                            {"_", "_", "_"}, 
+                            {"_", "_", "_"}};
+
+        if (ClientThread.ClientThreads.size() == 2 ) {
+            myGame = new GameManager
+            (ClientThread.ClientThreads.get(0).getUsername(), 
+            ClientThread.ClientThreads.get(1).getUsername(), 
+            board);
+
+            myGame.setCurrentPlayer(ClientThread.ClientThreads.get(0).getUsername());
+            //System.out.println("SERVER: It's " + newGame.getCurrentPlayer() + " turn!");
+        }        
+    }
+
+    public GameManager getGame() {
+        return this.myGame;
+    }
+
     public void startServer() {
         try {
+
+            System.out.println("The game has begun.");
             //we want to keep the socket running as long as it's not closed
             while (!myServerSocket.isClosed()) {
                 //waiting for client to connect
@@ -32,11 +58,12 @@ public class Server {
                  * 
                  * When you launch an exectuable, it is running a thread within the process.
                  */
-                ClientHandler myClientHandler = new ClientHandler(mySocket);
+                ClientThread myClientThread = new ClientThread(mySocket, this);
 
-                Thread myThread = new Thread(myClientHandler);
+                Thread myThread = new Thread(myClientThread);
                 //this is the code that actually runs the thread, not main.
                 myThread.start(); //start thread.
+                startGame();
             }
 
         } catch (IOException e) { //IO = input/output exception
@@ -73,10 +100,9 @@ public class Server {
          ServerSocket mainServerSocket = new ServerSocket(1234);
          //server
          Server myServer = new Server(mainServerSocket);
+
          //start the server
          myServer.startServer();
-
-
     }
 
 }
