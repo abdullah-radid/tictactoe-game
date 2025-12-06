@@ -1,108 +1,118 @@
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 
-
+// This is the server program. Run this first.
+// It waits for up to 2 players, then starts one game between them.
 public class Server {
-    
-    private ServerSocket myServerSocket;
-    private GameManager myGame;
-    private HashMap<Thread, String> gameLobby;
 
-    public Server(ServerSocket myServerSocket) {
-        this.myServerSocket = myServerSocket;
-    }
+    private ServerSocket serverSocket;
+    private GameManager game; // keeps track of board and turns
 
-
-    public void startGame() {
-        String[][] board = {{"_", "_", "_"}, 
-                            {"_", "_", "_"}, 
-                            {"_", "_", "_"}};
-
-        if (ClientThread.ClientThreads.size() == 2 ) {
-            myGame = new GameManager
-            (ClientThread.ClientThreads.get(0).getUsername(), 
-            ClientThread.ClientThreads.get(1).getUsername(), 
-            board);
-
-            myGame.setCurrentPlayer(ClientThread.ClientThreads.get(0).getUsername());
-            //System.out.println("SERVER: It's " + newGame.getCurrentPlayer() + " turn!");
-        }        
+    public Server(ServerSocket serverSocket) {
+        this.serverSocket = serverSocket;
     }
 
     public GameManager getGame() {
-        return this.myGame;
+        return game;
+    }
+
+    // helper: called when we have 2 players connected
+    private void startGameIfReady() {
+        if (ClientThread.clientThreads.size() == 2 && game == null) {
+
+            ClientThread p1 = ClientThread.clientThreads.get(0);
+            ClientThread p2 = ClientThread.clientThreads.get(1);
+
+            game = new GameManager(p1.getUsername(), p2.getUsername());
+
+            // assign X and O
+            p1.setSymbol('X');
+            p2.setSymbol('O');
+
+            // "old style" messages that you wanted to keep
+            p1.sendToThisClient("MESSAGE Welcome " + p1.getUsername() + "!");
+            p1.sendToThisClient("MESSAGE Game started! You are X.");
+
+            p2.sendToThisClient("MESSAGE Welcome " + p2.getUsername() + "!");
+            p2.sendToThisClient("MESSAGE Game started! You are O.");
+
+            // used by GUI to show symbol
+            p1.sendToThisClient("START X");
+            p2.sendToThisClient("START O");
+
+            // send turn messages for the first time
+            sendTurnMessages();
+        }
+    }
+
+    // sends YOUR_TURN / OPPONENT_TURN + TURN <name> to everyone
+    public void sendTurnMessages() {
+        if (game == null) return;
+
+        String current = game.getCurrentPlayer();
+
+        // send YOUR_TURN / OPPONENT_TURN
+        for (ClientThread ct : ClientThread.clientThreads) {
+            if (ct.getUsername().equals(current)) {
+                ct.sendToThisClient("YOUR_TURN");
+            } else {
+                ct.sendToThisClient("OPPONENT_TURN");
+            }
+        }
+
+        // also broadcast TURN <name> so GUI can double check
+        if (!ClientThread.clientThreads.isEmpty()) {
+            ClientThread any = ClientThread.clientThreads.get(0);
+            any.broadcastMessage("TURN " + current);
+            any.broadcastMessage("MESSAGE It is " + current + "'s turn.");
+        }
     }
 
     public void startServer() {
+        System.out.println("Server started. Waiting for players...");
         try {
+            while (!serverSocket.isClosed()) {
+                Socket socket = serverSocket.accept();
 
-            System.out.println("The game has begun.");
-            //we want to keep the socket running as long as it's not closed
-            while (!myServerSocket.isClosed()) {
-                //waiting for client to connect
-                Socket mySocket = myServerSocket.accept();
-                //Client connection
-                System.out.println("A new user has connected.");
+                // only allow 2 players max
+                if (ClientThread.clientThreads.size() >= 2) {
+                    BufferedWriter tempOut = new BufferedWriter(
+                            new OutputStreamWriter(socket.getOutputStream()));
+                    tempOut.write("SERVER: Lobby is full. Try again later.");
+                    tempOut.newLine();
+                    tempOut.flush();
+                    socket.close();
+                    continue;
+                }
 
-                //each obj of this class is responsible for communicating with a client
-                /*
-                 * Client Handler will implement runnable interfance, which will make the 
-                 * instances of the class be handles by separate threads.
-                 * 
-                 * A thread is a sequence of instructions within a program that can be executed
-                 * independently of other code. 
-                 * 
-                 * Threads share a memory space. 
-                 * 
-                 * When you launch an exectuable, it is running a thread within the process.
-                 */
-                ClientThread myClientThread = new ClientThread(mySocket, this);
+                System.out.println("A new player has connected.");
 
-                Thread myThread = new Thread(myClientThread);
-                //this is the code that actually runs the thread, not main.
-                myThread.start(); //start thread.
-                startGame();
-            }
+                ClientThread clientThread = new ClientThread(socket, this);
+                Thread t = new Thread(clientThread);
+                t.start();
 
-        } catch (IOException e) { //IO = input/output exception
-            
-        }
-    } 
-
-    //closes server socket
-    public void closeServerSocket() {
-        try {
-            if (myServerSocket != null) {
-                myServerSocket.close();
+                startGameIfReady();
             }
         } catch (IOException e) {
-            //stack trace is list of method calls that app was in middle of when exception was thrown
+            closeServerSocket();
+        }
+    }
+
+    public void closeServerSocket() {
+        try {
+            if (serverSocket != null) serverSocket.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static void main(String[] args) throws IOException{
-        /* 
-         * A computer program becomes a process when it is loaded from the computer's memory
-         * and begins execution.
-         * 
-         * A process can be executed by a processor or a set of processors.
-         * 
-         * A process description in memory contains info such as the program counter (which
-         * information is currently being executed), registers, variable stores, file handlers,
-         * signals, etc.
-         * 
-         */
-
-         //server listening for clients that make a connection on this port number
-         ServerSocket mainServerSocket = new ServerSocket(1234);
-         //server
-         Server myServer = new Server(mainServerSocket);
-
-         //start the server
-         myServer.startServer();
+    // run this to start server
+    public static void main(String[] args) throws IOException {
+        ServerSocket ss = new ServerSocket(1234);
+        Server server = new Server(ss);
+        server.startServer();
     }
-
 }
