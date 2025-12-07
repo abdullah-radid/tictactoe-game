@@ -125,9 +125,9 @@ public class ClientThread implements Runnable {
                     broadcastMessage("BOARD " + row + " " + col + " " + symbolStr);
 
                     // optional: also show text version of board in chat
-                    for (String rowText : game.displayBoard()) {
-                        broadcastMessage("MESSAGE " + rowText);
-                    }
+                    //for (String rowText : game.displayBoard()) {
+                    //    broadcastMessage("MESSAGE " + rowText);
+                    //}
 
                     // check for win/draw
                     if (game.checkWinFor(symbolStr)) {

@@ -1,8 +1,11 @@
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 // This is the server program. Run this first.
 // It waits for up to 2 players, then starts one game between them.
@@ -10,6 +13,8 @@ public class Server {
 
     private ServerSocket serverSocket;
     private GameManager game; // keeps track of board and turns
+
+    private List<ClientThread> clients = new ArrayList<>();
 
     public Server(ServerSocket serverSocket) {
         this.serverSocket = serverSocket;
@@ -111,7 +116,7 @@ public class Server {
 
     // run this to start server
     public static void main(String[] args) throws IOException {
-        ServerSocket ss = new ServerSocket(1234);
+        ServerSocket ss = new ServerSocket(1234, 50, InetAddress.getByName("0.0.0.0"));
         Server server = new Server(ss);
         server.startServer();
     }

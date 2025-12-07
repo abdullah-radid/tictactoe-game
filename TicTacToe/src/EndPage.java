@@ -44,9 +44,7 @@ public class EndPage extends JPanel {
 
         JButton exitButton = new JButton("Exit");
         exitButton.addActionListener(e -> {
-            if (listener != null) {
-                listener.onExitRequested();
-            }
+            System.exit(0);
         });
 
         JPanel bottom = new JPanel();

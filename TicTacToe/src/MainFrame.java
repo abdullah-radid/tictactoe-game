@@ -49,7 +49,7 @@ public class MainFrame extends JFrame
         cardLayout.show(cards, "START");
     }
 
-    // ===== StartPageListener =====
+    // StartPageListener 
     @Override
     public void onConnectRequested(String username, String host) {
         try {
