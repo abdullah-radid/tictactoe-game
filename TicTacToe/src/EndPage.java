@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.net.Socket;
 
 // Very simple "end screen" that shows who won + a thank you message.
 public class EndPage extends JPanel {
@@ -44,7 +45,7 @@ public class EndPage extends JPanel {
 
         JButton exitButton = new JButton("Exit");
         exitButton.addActionListener(e -> {
-            System.exit(0);
+                System.exit(0);
         });
 
         JPanel bottom = new JPanel();

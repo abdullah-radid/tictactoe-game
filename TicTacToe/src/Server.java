@@ -13,6 +13,8 @@ public class Server {
 
     private ServerSocket serverSocket;
     private GameManager game; // keeps track of board and turns
+    public static Server runningInstance;
+
 
     private List<ClientThread> clients = new ArrayList<>();
 
@@ -114,10 +116,29 @@ public class Server {
         }
     }
 
+    public void shutdownServerNow() {
+    System.out.println("Server shutting down.");
+
+    try {
+        for (ClientThread ct : ClientThread.clientThreads) {
+            ct.closeEverything();
+        }
+        if (serverSocket != null && !serverSocket.isClosed()) {
+            serverSocket.close();
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+
+    System.exit(0);
+}
+
+
     // run this to start server
     public static void main(String[] args) throws IOException {
         ServerSocket ss = new ServerSocket(1234, 50, InetAddress.getByName("0.0.0.0"));
         Server server = new Server(ss);
+        Server.runningInstance = server;
         server.startServer();
     }
 }

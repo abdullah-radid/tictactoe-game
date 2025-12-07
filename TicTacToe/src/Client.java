@@ -31,6 +31,11 @@ public class Client {
         writer.flush();
     }
 
+    public Socket getSocket() {
+    return socket;
+    }
+
+
     // background thread that just sits and waits for messages from server
     public void startListening() {
         Thread t = new Thread(() -> {

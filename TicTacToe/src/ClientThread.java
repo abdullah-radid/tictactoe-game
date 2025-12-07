@@ -133,9 +133,11 @@ public class ClientThread implements Runnable {
                     if (game.checkWinFor(symbolStr)) {
                         broadcastMessage("RESULT WIN " + username);
                         broadcastMessage("MESSAGE " + username + " has won!");
+                        server.shutdownServerNow();
                     } else if (game.isBoardFull()) {
                         broadcastMessage("RESULT DRAW");
                         broadcastMessage("MESSAGE Game is a draw.");
+                        server.shutdownServerNow();
                     } else {
                         // no winner yet, switch to the other player
                         game.switchTurn();
